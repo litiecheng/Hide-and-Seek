@@ -1,0 +1,12 @@
+
+player.png
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+walkAnimation
+  rotate: false
+  xy: 1, 1
+  size: 252, 38
+  orig: 252, 38
+  offset: 0, 0
+  index: -1
