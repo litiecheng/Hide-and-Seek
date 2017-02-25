@@ -90,7 +90,7 @@ public class MenuScreen implements Screen, InputProcessor {
     }
 
     public void update() {
-        /*if(game.btm.isEnabled()) {
+        if(game.btm.isEnabled()) {
             if(menuChoice == 1) {
                 game.btm.startServer();
                 dispose();
@@ -101,7 +101,7 @@ public class MenuScreen implements Screen, InputProcessor {
                 dispose();
                 game.setScreen(new JoinScreen(game));
             }
-        }*/
+        }
     }
 
     @Override
@@ -181,16 +181,15 @@ public class MenuScreen implements Screen, InputProcessor {
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         coords.set(screenX, screenY, 0);
         game.cam.unproject(coords);
-        //coords.x *= resolutionFactorX;
-        //coords.y *= resolutionFactorY;
+        coords.x *= resolutionFactorX;
+        coords.y *= resolutionFactorY;
 
-        System.out.println(coords);
-        System.out.println(hostRect.toString());
         if (new Rectangle(coords.x, coords.y, 2, 2).overlaps(hostRect)) {
-            System.out.println("EDWDWDWDWDWD");
+            System.out.println("EDWDWDWDWDWD11111");
             game.btm.enableDiscoveribility();
             menuChoice = 1;
         } else if (new Rectangle(coords.x, coords.y, 2, 2).overlaps(joinRect)) {
+            System.out.println("EDWDWDWDWDWD2222");
             game.btm.enableBluetooth();
             menuChoice = 2;
         }

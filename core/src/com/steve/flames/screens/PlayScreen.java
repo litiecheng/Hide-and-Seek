@@ -58,7 +58,7 @@ public class PlayScreen implements Screen, InputProcessor {
     private boolean doOnceY = true;
     private int roomX = 0;
     private int roomY = 0;
-    Circle circle = new Circle();
+    private Circle circle = new Circle();
 
     private String message;
 
@@ -131,6 +131,9 @@ public class PlayScreen implements Screen, InputProcessor {
                     players.add(new Player(world, this, (int) startingPoints.get(i).x, (int) startingPoints.get(i).y));
                     i++;
                 }
+            }
+            else {
+                players.add(new Player(world, this, (int) startingPoints.get(0).x, (int) startingPoints.get(0).y));
             }
         }
         else {
@@ -331,7 +334,7 @@ public class PlayScreen implements Screen, InputProcessor {
     public void dispose() {
         map.dispose();
         renderer.dispose();
-        world.dispose();
+        //world.dispose();
         b2dr.dispose();
         hud.dispose();
         for(Player player: players)
@@ -386,6 +389,7 @@ public class PlayScreen implements Screen, InputProcessor {
         }
         return false;
     }
+
 
     @Override
     public boolean keyTyped(char character) {
