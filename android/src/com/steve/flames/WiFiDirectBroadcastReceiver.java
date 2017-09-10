@@ -27,21 +27,26 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pManager.PeerListListener myPeerListListener = new WifiP2pManager.PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList wifiP2pDeviceList) {
-            activity.getWfm().getAvailableDevices().clear();
-            for(WifiP2pDevice device: wifiP2pDeviceList.getDeviceList()) {
-                activity.getWfm().getAvailableDevices().add(new Device(device.deviceName, device.deviceAddress));
-            }
+            //if(!activity.getWfm().getAvailableDevices().equals(wifiP2pDeviceList.getDeviceList())) {
+                activity.getWfm().getAvailableDevices().clear();
+                for (WifiP2pDevice device : wifiP2pDeviceList.getDeviceList())
+                    activity.getWfm().getAvailableDevices().add(new Device(device.deviceName, device.deviceAddress));
+            //}
         }
     };
 
     private WifiP2pManager.ConnectionInfoListener infoListener = new WifiP2pManager.ConnectionInfoListener() {
         @Override
         public void onConnectionInfoAvailable(WifiP2pInfo wifiP2pInfo) {
+            System.out.println("ZAZA");
             if(wifiP2pInfo.isGroupOwner) {
+                activity.getWfm().setGroupOwner(true);
                 activity.getWfm().initServer();
                 activity.getWfm().setConnected(true);
             }
             else {
+                System.out.println("ZAZA1212");
+                activity.getWfm().setGroupOwner(false);
                 activity.getWfm().initClient(wifiP2pInfo.groupOwnerAddress.toString());
             }
         }

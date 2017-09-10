@@ -30,6 +30,7 @@ public class WiFiDirectManager implements iWiFiDirect {
     private Timer timer;
 
     private boolean connected = false;
+    private boolean groupOwner = false;
     private ChatServer chatServer;
     private ChatClient chatClient;
 
@@ -100,15 +101,6 @@ public class WiFiDirectManager implements iWiFiDirect {
             public void onSuccess() {
                 //success logic
                 toast("Group created");
-
-                timer = new Timer(true);
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        discoverDevices();
-                        timer.cancel();
-                     }
-                }, 2000, 2000);
             }
 
             @Override
@@ -268,7 +260,7 @@ public class WiFiDirectManager implements iWiFiDirect {
 
     @Override
     public void initClient(String s) {
-        if(chatClient == null)
+        //if(chatClient == null)
             chatClient = new ChatClient(s, activity.getGame());
     }
 
@@ -277,6 +269,11 @@ public class WiFiDirectManager implements iWiFiDirect {
         if(chatClient != null)
             return chatClient.isFinish();
         return false;
+    }
+
+    @Override
+    public boolean isGroupOwner() {
+        return groupOwner;
     }
 
     void dismissDialog() {
@@ -294,5 +291,9 @@ public class WiFiDirectManager implements iWiFiDirect {
     @Override
     public void setConnected(boolean connected) {
         this.connected = connected;
+    }
+
+    public void setGroupOwner(boolean groupOwner) {
+        this.groupOwner = groupOwner;
     }
 }

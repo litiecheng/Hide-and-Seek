@@ -351,6 +351,7 @@ public class PlayScreen implements Screen, InputProcessor {
         hud.dispose();
         for(Player player: players)
             player.dispose();
+        game.wfm.disconnect();
     }
 
 

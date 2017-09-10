@@ -57,7 +57,6 @@ public class ChatServer implements Runnable {
 
                 OutputStream os = dataSocket.getOutputStream(); //get the outgoing stream
                 outList.add(new PrintWriter(os,true));
-
                 InputStream is = dataSocket.getInputStream(); //get the incoming stream
                 in = new BufferedReader(new InputStreamReader(is));
 

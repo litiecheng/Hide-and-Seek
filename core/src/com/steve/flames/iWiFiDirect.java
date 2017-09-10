@@ -23,6 +23,7 @@ public interface iWiFiDirect {
     ArrayList<Device> getConnectedDevices();
     void resetData();
     boolean hasClientInitFinish();
+    boolean isGroupOwner();
 
     void initServer();
     void initClient(String s);

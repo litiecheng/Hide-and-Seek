@@ -71,6 +71,7 @@ public class AndroidLauncher extends AndroidApplication {
 		for(Socket socket: ChatServer.dataSocketsHMap.values()) {
 			Log.e("EEEEE", "EKANA RESET TA DATA SOCKETS STO ONDESTROY()");
 			try {
+				wfm.setConnected(false);
 				socket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -84,10 +85,10 @@ public class AndroidLauncher extends AndroidApplication {
 	 */
 	public void resetData() {
 		wfm.resetData();
+		if(!wfm.isGroupOwner())
+			wfm.setConnected(false);
 		//wfm.discoverDevices();
 	}
-
-
 
 	public boolean isWifiP2pEnabled() {
 		return isWifiP2pEnabled;

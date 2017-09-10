@@ -22,6 +22,8 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.steve.flames.HaSGame;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Flames on 10/4/16.
@@ -40,6 +42,7 @@ public class MenuScreen implements Screen, InputProcessor {
     //public final static float resolutionFactorY = (Gdx.graphics.getHeight()/480.0f);
 
     private HaSGame game;
+    private Timer timer;
 
     private ShapeRenderer sr;
 
@@ -181,7 +184,15 @@ public class MenuScreen implements Screen, InputProcessor {
         if (new Rectangle(coords.x, coords.y, 2, 2).overlaps(hostRect)) {
             game.wfm.resetData();
             game.wfm.disconnect();
-            game.wfm.createGroup();
+            game.wfm.discoverDevices();
+            timer = new Timer(true);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    game.wfm.createGroup();
+                    timer.cancel();
+                }
+            }, 2000, 2000);
             menuChoice = 1;
         } else if (new Rectangle(coords.x, coords.y, 2, 2).overlaps(joinRect)) {
             game.wfm.resetData();
