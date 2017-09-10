@@ -11,6 +11,6 @@ public class DesktopLauncher {
 		config.height = HaSGame.V_HEIGHT*2;
 		config.title = HaSGame.TITLE;
 		//config.resizable = false;
-		new LwjglApplication(new HaSGame(new WiFi()), config);
+		new LwjglApplication(new HaSGame(new WiFiDirect()), config);
 	}
 }

@@ -36,8 +36,8 @@ public class MenuScreen implements Screen, InputProcessor {
     private float BTN13Y;
     private float BTN24Y;
 
-    public final static float resolutionFactorX = (Gdx.graphics.getWidth()/800.0f);
-    public final static float resolutionFactorY = (Gdx.graphics.getHeight()/480.0f);
+    //public final static float resolutionFactorX = (Gdx.graphics.getWidth()/800.0f);
+    //public final static float resolutionFactorY = (Gdx.graphics.getHeight()/480.0f);
 
     private HaSGame game;
 
@@ -68,8 +68,8 @@ public class MenuScreen implements Screen, InputProcessor {
         hostT = new Texture("hostBtn.png");
         joinT = new Texture("joinBtn.png");
 
-        hostRect = new Rectangle((int)BTN12X*resolutionFactorX, (int)BTN13Y*resolutionFactorY, BUTTON_WIDTH*resolutionFactorX, BUTTON_HEIGHT*resolutionFactorY);
-        joinRect = new Rectangle((int)BTN34X*resolutionFactorX, (int)BTN24Y*resolutionFactorY, BUTTON_WIDTH*resolutionFactorX, BUTTON_HEIGHT*resolutionFactorY);
+        hostRect = new Rectangle((int)BTN12X, (int)BTN13Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+        joinRect = new Rectangle((int)BTN34X, (int)BTN24Y, BUTTON_WIDTH, BUTTON_HEIGHT);
 
         Gdx.input.setInputProcessor(this);
         Gdx.input.setCatchBackKey(true);
@@ -90,17 +90,13 @@ public class MenuScreen implements Screen, InputProcessor {
     }
 
     public void update() {
-        if(game.btm.isEnabled()) {
-            if(menuChoice == 1) {
-                game.btm.startServer();
-                dispose();
-                game.setScreen(new HostScreen(game));
-            }
-            else if (menuChoice == 2) {
-                game.btm.discoverDevices();
-                dispose();
-                game.setScreen(new JoinScreen(game));
-            }
+        if(menuChoice == 1) {
+            dispose();
+            game.setScreen(new HostScreen(game));
+        }
+        else if (menuChoice == 2) {
+            dispose();
+            game.setScreen(new JoinScreen(game));
         }
     }
 
@@ -181,16 +177,16 @@ public class MenuScreen implements Screen, InputProcessor {
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
         coords.set(screenX, screenY, 0);
         game.cam.unproject(coords);
-        coords.x *= resolutionFactorX;
-        coords.y *= resolutionFactorY;
 
         if (new Rectangle(coords.x, coords.y, 2, 2).overlaps(hostRect)) {
-            System.out.println("EDWDWDWDWDWD11111");
-            game.btm.enableDiscoveribility();
+            game.wfm.resetData();
+            game.wfm.disconnect();
+            game.wfm.createGroup();
             menuChoice = 1;
         } else if (new Rectangle(coords.x, coords.y, 2, 2).overlaps(joinRect)) {
-            System.out.println("EDWDWDWDWDWD2222");
-            game.btm.enableBluetooth();
+            game.wfm.resetData();
+            game.wfm.disconnect();
+            game.wfm.discoverDevices();
             menuChoice = 2;
         }
         return false;

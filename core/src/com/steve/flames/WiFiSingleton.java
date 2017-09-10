@@ -6,7 +6,7 @@ package com.steve.flames;
 public class WiFiSingleton {
 
     private static volatile WiFiSingleton instance = null;
-    public iWiFi wifiManager;
+    public iWiFiDirect wifiManager;
 
     /* METHODS */
     public static WiFiSingleton getInstance() {

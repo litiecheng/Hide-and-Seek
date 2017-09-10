@@ -6,6 +6,22 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.steve.flames.screens.MenuScreen;
 
+/**
+ * TODO:
+ * enable P2P
+ * already peered ton bgazei sta available alla profanws de kanei connect
+ * stop discovery onPause + otan s feugei ap to host/join screen
+ * otan disconnect to available list?? ...?
+ *
+ * me prasino xrwma an einai sto game lobby alliws kokkino k not ready
+ * an oloi rdy ksekina to paixnidi
+ *
+ * JOIN
+ * rename to onoma tou
+ * on pause na ginetai kokkinos(not ready) (apostolh mnmtos enhmerwshs ston host)
+ *
+ */
+
 public class HaSGame extends Game {
 	public static final String TITLE = "Hide and Seek";
 	public static final int V_WIDTH = 400;
@@ -14,11 +30,11 @@ public class HaSGame extends Game {
 
 	public SpriteBatch batch;
 	public OrthographicCamera cam;
-	public iWiFi btm;
-	public BitmapFont font;
+	public iWiFiDirect wfm;
+	public static BitmapFont font;
 
-	public HaSGame(iWiFi wm) {
-		this.btm = wm;
+	public HaSGame(iWiFiDirect wm) {
+		this.wfm = wm;
 	}
 	@Override
 	public void create () {

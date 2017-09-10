@@ -19,6 +19,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
+import com.steve.flames.Device;
 import com.steve.flames.HaSGame;
 import com.steve.flames.screens.PlayScreen;
 
@@ -28,12 +29,14 @@ import java.util.ArrayList;
  * Created by Flames on 9/4/16.
  */
 public class Player extends Sprite {
+
     public enum State {STANDING, RUNNINGDOWN, RUNNINGUP, RUNNINGRIGHT, RUNNINGLEFT};
     public State currentState, previousState;
 
     public World world;
     public Body b2body;
     public Vector2 velocity;
+    private Device playerDevice;
     private Fixture fixture;
     private TextureRegion playerStandUp, playerStandDown, playerStandRight, playerStandLeft;
     private Animation playerWalkDown, playerWalkUp, playerWalkSide;
@@ -64,8 +67,9 @@ public class Player extends Sprite {
 
     private boolean active;
 
-    public Player(World world, PlayScreen screen, int x, int y) {
+    public Player(Device device, World world, PlayScreen screen, int x, int y) {
         super(screen.getAtlas().findRegion("walkAnimation"));
+        this.playerDevice = device;
         this.world = world;
         game = screen;
         velocity = new Vector2(0,0);
@@ -375,5 +379,13 @@ public class Player extends Sprite {
     public void dispose() {
         world.dispose();
 
+    }
+
+    public Device getPlayerDevice() {
+        return playerDevice;
+    }
+
+    public void setPlayerDevice(Device playerDevice) {
+        this.playerDevice = playerDevice;
     }
 }
