@@ -36,7 +36,6 @@ public class Player extends Sprite {
     public World world;
     public Body b2body;
     public Vector2 velocity;
-    private Device playerDevice;
     private Fixture fixture;
     private TextureRegion playerStandUp, playerStandDown, playerStandRight, playerStandLeft;
     private Animation playerWalkDown, playerWalkUp, playerWalkSide;
@@ -47,7 +46,6 @@ public class Player extends Sprite {
     private float speedX, speedY;
 
     private Vector2 vertex1, vertex2;
-    public boolean upPressed=false, rightPressed=false, downPressed=false, leftPressed=false;
 
     private boolean touchDown;
 
@@ -61,17 +59,16 @@ public class Player extends Sprite {
 
     private boolean changeRoom;
     private float changeTime;
-    private PlayScreen game;
+    private PlayScreen screen;
 
     private ArrayList<String> playersSpotted;
 
     private boolean active;
 
-    public Player(Device device, World world, PlayScreen screen, int x, int y) {
+    public Player(World world, PlayScreen screen, int x, int y) {
         super(screen.getAtlas().findRegion("walkAnimation"));
-        this.playerDevice = device;
         this.world = world;
-        game = screen;
+        this.screen = screen;
         velocity = new Vector2(0,0);
         definePlayer(x,y);
         defineLineOfSight();
@@ -153,7 +150,7 @@ public class Player extends Sprite {
         }
         setPosition(b2body.getPosition().x - getWidth() / 2, b2body.getPosition().y - getHeight() / 2);
         setRegion(getFrame(dt));
-        circle.set(b2body.getPosition().x, b2body.getPosition().y, 16 / HaSGame.PPM);
+        circle.set(b2body.getPosition().x, b2body.getPosition().y, 14 / HaSGame.PPM);
 
         vertices[0] = b2body.getPosition().x;
         vertices[1] = b2body.getPosition().y;
@@ -162,51 +159,12 @@ public class Player extends Sprite {
         vertices[4] = b2body.getPosition().x + vertex2.x;
         vertices[5] = b2body.getPosition().y + vertex2.y;
 
-        handleMovement();
         handleSPinteract();
     }
 
-    private void handleMovement() {
-        if(upPressed) {
-            velocity.x = 0;
-            velocity.y = speedY;
-            setFacing(0);
-            turnLineOfSightUp();
-        } /*else {
-            //velocity.y = 0;
-        }*/
-
-        else if(rightPressed) {
-            velocity.y = 0;
-            velocity.x = speedX;
-            setFacing(1);
-            turnLineOfSightRight();
-        } /*else {
-            //velocity.x = 0;
-        }*/
-
-        else if(downPressed) {
-            velocity.x = 0;
-            velocity.y = -speedY;
-            setFacing(2);
-            turnLineOfSightDown();
-        } /*else {
-            //velocity.y = 0;
-        }*/
-
-        else if(leftPressed) {
-            velocity.y = 0;
-            velocity.x = -speedX;
-            setFacing(3);
-            turnLineOfSightLeft();
-        } /*else {
-            //velocity.x = 0;
-        }*/
-    }
-
     private void handleSPinteract() {
-        if(getBoundingRectangle().overlaps(game.getSpRect())) {
-            if(game.isSeeker()) {
+        if(getBoundingRectangle().overlaps(screen.getSpRect())) {
+            if(screen.isSeeker()) {
                 if(!playersSpotted.isEmpty()) {
                     System.out.println("VGALE GAME OVER SE AFTOUS POU VRHKE");
                 }
@@ -293,28 +251,28 @@ public class Player extends Sprite {
         return touchDown;
     }
 
-    public void changeRoom(int dir) {
-        if(changeRoom == false) {
+    public void changeRoom(int dir, float x, float y) {
+        if(!changeRoom) {
             switch (dir) {
                 case 0:
                     changeRoom = true;
-                    //b2body.setTransform(new Vector2(b2body.getPosition().x, b2body.getPosition().y + 0.28f), b2body.getAngle());
+                    //b2body.setTransform(x, y+30, b2body.getAngle());
                     b2body.applyLinearImpulse(0, 35, 0, 0, true);
                     break;
                 case 1:
                     changeRoom = true;
                     b2body.applyLinearImpulse(35, 0, 0, 0, true);
-                    //b2body.setTransform(new Vector2(b2body.getPosition().x + 0.28f, b2body.getPosition().y), b2body.getAngle());
+                    //b2body.setTransform(x+30,y, b2body.getAngle());
                     break;
                 case 2:
                     changeRoom = true;
                     b2body.applyLinearImpulse(0, -35, 0, 0, true);
-                    //b2body.setTransform(new Vector2(b2body.getPosition().x, b2body.getPosition().y - 0.28f), b2body.getAngle());
+                    //b2body.setTransform(x, y-30, b2body.getAngle());
                     break;
                 case 3:
                     changeRoom = true;
                     b2body.applyLinearImpulse(-35, 0, 0, 0, true);
-                    //b2body.setTransform(new Vector2(b2body.getPosition().x - 0.28f, b2body.getPosition().y), b2body.getAngle());
+                    //b2body.setTransform(x-30, y, b2body.getAngle());
                     break;
             }
         }
@@ -351,41 +309,8 @@ public class Player extends Sprite {
         speedY = 0.7f;
     }
 
-    /*public void upPressedF() {
-        velocity.x = 0;
-        velocity.y = speedY;
-        setFacing(0);
-        turnLineOfSightUp();
-    }
-    public void downPressedF() {
-        velocity.x = 0;
-        velocity.y = -speedY;
-        setFacing(2);
-        turnLineOfSightDown();
-    }
-    public void rightPressedF() {
-        velocity.y = 0;
-        velocity.x = speedX;
-        setFacing(1);
-        turnLineOfSightRight();
-    }
-    public void leftPressedF() {
-        velocity.y = 0;
-        velocity.x = -speedX;
-        setFacing(3);
-        turnLineOfSightLeft();
-    }*/
-
     public void dispose() {
         world.dispose();
-
     }
 
-    public Device getPlayerDevice() {
-        return playerDevice;
-    }
-
-    public void setPlayerDevice(Device playerDevice) {
-        this.playerDevice = playerDevice;
-    }
 }

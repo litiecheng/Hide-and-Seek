@@ -5,6 +5,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -104,7 +105,10 @@ public class MenuScreen implements Screen, InputProcessor {
     }
 
     @Override
-    public void render(float delta) {
+    public void render(float delta) {//clear game screen with black
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         game.batch.setProjectionMatrix(game.cam.combined);
 
         //game.batch.setProjectionMatrix(stage.getCamera().combined);

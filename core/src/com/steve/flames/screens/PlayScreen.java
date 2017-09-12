@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -25,10 +26,14 @@ import com.steve.flames.Device;
 import com.steve.flames.HaSGame;
 import com.steve.flames.Tools.B2WorldCreator;
 import com.steve.flames.Tools.WorldContactListener;
+import com.steve.flames.network.ChatServer;
 import com.steve.flames.scenes.Hud;
 import com.steve.flames.sprites.Player;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by Flames on 9/4/16.
@@ -50,21 +55,15 @@ public class PlayScreen implements Screen, InputProcessor {
     private Box2DDebugRenderer b2dr;
     private ShapeRenderer sr;
 
-    private ArrayList<Player> players;
+    private CopyOnWriteArrayList<Player> players;
     private int playerIndex;
     public Vector3 tapCoords;
 
     private B2WorldCreator b2wc;
 
-    private boolean doOnceX = true;
-    private boolean doOnceY = true;
     private int roomX = 0;
     private int roomY = 0;
     private Circle circle = new Circle();
-
-    private int i=0;
-
-    private float dx, dy, d, y;
 
     private ArrayList<Vector2> startingPoints;
 
@@ -72,38 +71,50 @@ public class PlayScreen implements Screen, InputProcessor {
     private Rectangle spRect;
     private Polygon lineOfView;
 
+    private boolean gameStarted = false;
 
-    public PlayScreen(HaSGame game, String playerID) {
+    private Timer timer;
+
+
+    public PlayScreen(final HaSGame game) {
         this.game = game;
+        int delay = 0;
         initialize();
-
-        Gdx.input.setInputProcessor(this);
+        Gdx.input.setInputProcessor(PlayScreen.this);
         Gdx.input.setCatchBackKey(true);
 
-        initializeStartingPoints();
-        initializePlayers(playerID);
+        if(game.wfm.isGroupOwner())
+            delay = 1000;
 
-        cam.position.set(gamePort.getWorldWidth()/2, gamePort.getWorldHeight()/2, 0);
-        spRect = new Rectangle(0,0,50/HaSGame.PPM,45/HaSGame.PPM);
-        spRect.setPosition(players.get(0).b2body.getPosition().x - spRect.width/2, players.get(0).b2body.getPosition().y - spRect.height/2 - 40);
-
-        world.setContactListener(new WorldContactListener());
-        startListeningThread();
-    }
-
-    private void startListeningThread() {
-        new Thread()
-        {
+        timer = new Timer(true);
+        timer.schedule(new TimerTask() {
+            @Override
             public void run() {
-                String msg = game.wfm.receiveMessage(); //read message
-                System.out.println("INGAME inc msg: "+msg);
-                while(msg == null || !msg.equals("!END")) { //read until connection is closed
+                initializeStartingPoints();
+                initializePlayers();
 
-                    msg = game.wfm.receiveMessage(); //read next message
+                cam.position.set(gamePort.getWorldWidth()/2, gamePort.getWorldHeight()/2, 0);
+                spRect = new Rectangle(0,0,50/HaSGame.PPM,45/HaSGame.PPM);
+                if(game.wfm.isGroupOwner())
+                    spRect.setPosition(players.get(0).b2body.getPosition().x - spRect.width/2, players.get(0).b2body.getPosition().y - spRect.height/2 - 40);
+                else {
+                    for (int j = 1; j < game.wfm.getConnectedDevices().size(); j++) {
+                        if (game.wfm.getCurrentDevice().getAddress().equals(game.wfm.getConnectedDevices().get(j).getAddress()))
+                            playerIndex = j;
+                    }
                 }
-                //dataSocket.close();
+
+
+                world.setContactListener(new WorldContactListener());
+
+                if(game.wfm.getConnectedDevices().size()>0)
+                    startListeningThread();
+                else
+                    gameStarted = true;
+                timer.cancel();
             }
-        }.start();
+        }, delay, 2000);
+
     }
 
     private void initialize() {
@@ -137,38 +148,84 @@ public class PlayScreen implements Screen, InputProcessor {
         Collections.shuffle(startingPoints);
     }
 
-    private void initializePlayers(String playerID) {
-        players = new ArrayList<Player>();
-        if(game.wfm.getConnectedDevices() != null ) {
-            if(!game.wfm.getConnectedDevices().isEmpty()) {
-                int i = 0;
+    private void initializePlayers() {
+        players = new CopyOnWriteArrayList<Player>();
+
+        if(!game.wfm.getConnectedDevices().isEmpty() ) {
+            int i = 0;
+            if(game.wfm.isGroupOwner()) {
+                players.add(new Player(world, this, (int) startingPoints.get(i).x, (int) startingPoints.get(i).y));
+                playerIndex = 0;
+                game.wfm.sendMessageToServer(playerIndex + " init " + (int)startingPoints.get(i).x + " " + (int)startingPoints.get(i).y);
+                i++;
                 for (Device device : game.wfm.getConnectedDevices()) {
-                    players.add(new Player(device, world, this, (int) startingPoints.get(0).x, (int) startingPoints.get(0).y)); //vale i
-                    if(device.getName().equals(game.wfm.getCurrentDevice().getName()))
-                        playerIndex = i; //an omws kapoios bgei apo connected,
+                    players.add(new Player(world, this, (int) startingPoints.get(i).x, (int) startingPoints.get(i).y));
+                    game.wfm.sendMessageToServer(i + " init " + (int)startingPoints.get(i).x + " " + (int)startingPoints.get(i).y);
+                    hud.incrementHiders();
                     i++;
                 }
-            }
-            else {
-                players.add(new Player(game.wfm.getCurrentDevice(), world, this, (int) startingPoints.get(0).x, (int) startingPoints.get(0).y));
+                gameStarted = true;
             }
         }
         else {
-            players.add(new Player(game.wfm.getCurrentDevice(), world, this, (int) startingPoints.get(0).x, (int) startingPoints.get(0).y));
+            players.add(new Player(world, this, (int) startingPoints.get(0).x, (int) startingPoints.get(0).y));
+            playerIndex = 0;
         }
     }
 
-    public TextureAtlas getAtlas() {
-        return atlas;
+    private void startListeningThread() {
+        new Thread()
+        {
+            public void run() {
+                String[] splitter;
+                String msg = game.wfm.receiveMessage(); //read message
+                while(msg != null && !msg.equals("!END")) { //read until connection is closed
+                    System.out.println("INGAME inc msg: "+msg);
+                    splitter = msg.split(" ");
+                    if(splitter[1].equals("init")) {
+                        players.add(new Player(world, PlayScreen.this, Integer.parseInt(splitter[2]), Integer.parseInt(splitter[3])));
+                        System.out.println("players size " + players.size());
+                        System.out.println(players.get(Integer.parseInt(splitter[0])) + " " +players.get(Integer.parseInt(splitter[0])).b2body.getPosition().x + " " + players.get(Integer.parseInt(splitter[0])).b2body.getPosition().y);
+                        if(splitter[0].equals("0")) {
+                            spRect.setPosition(players.get(0).b2body.getPosition().x - spRect.width / 2, players.get(0).b2body.getPosition().y - spRect.height / 2 - 40);
+                        }
+                        else {
+                            hud.incrementHiders();
+                            if(Integer.parseInt(splitter[0]) == (game.wfm.getConnectedDevices().size()-1))
+                                gameStarted = true;
+                        }
+                    }
+                    else if(splitter[1].equals("btnRightDown")) {
+                        btnRightDown(Integer.parseInt(splitter[0]), Float.parseFloat(splitter[2]));
+                        players.get(Integer.parseInt(splitter[0])).b2body.setTransform(Float.parseFloat(splitter[3]), Float.parseFloat(splitter[4]), 0);
+                    }
+                    else if(splitter[1].equals("btnLeftDown")) {
+                        btnLeftDown(Integer.parseInt(splitter[0]), Float.parseFloat(splitter[2]));
+                        players.get(Integer.parseInt(splitter[0])).b2body.setTransform(Float.parseFloat(splitter[3]), Float.parseFloat(splitter[4]), 0);
+                    }
+                    else if(splitter[1].equals("btnUpDown")) {
+                        btnUpDown(Integer.parseInt(splitter[0]), Float.parseFloat(splitter[2]));
+                        players.get(Integer.parseInt(splitter[0])).b2body.setTransform(Float.parseFloat(splitter[3]), Float.parseFloat(splitter[4]), 0);
+                    }
+                    else if(splitter[1].equals("btnDownDown")) {
+                        btnDownDown(Integer.parseInt(splitter[0]), Float.parseFloat(splitter[2]));
+                        players.get(Integer.parseInt(splitter[0])).b2body.setTransform(Float.parseFloat(splitter[3]), Float.parseFloat(splitter[4]), 0);
+                    }
+                    else if(splitter[1].equals("btnTouchUp")) {
+                        btnTouchUp(Integer.parseInt(splitter[0]));
+                    }
+                    msg = game.wfm.receiveMessage(); //read next message
+                }
+                System.out.println("EIMAI O " + game.wfm.getCurrentDevice().getName() + " KAI TELEIWSA TO IN GAME LISTEN");
+                dispose();
+                game.wfm.toast("You have disconnected");
+                game.setScreen(new MenuScreen(game));
+                //dataSocket.close();
+            }
+        }.start();
     }
 
-    @Override
-    public void show() {
-
-    }
-
-    public void handleInput(float dt) {
-
+    private void handleInput(float dt) {
         if(currentPlayer().isTouchDown()) {
             tapCoords.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             cam.unproject(tapCoords);
@@ -176,150 +233,148 @@ public class PlayScreen implements Screen, InputProcessor {
 
             if(!circle.overlaps(currentPlayer().getCircle())) {
                 if (tapCoords.x > currentPlayer().b2body.getPosition().x + currentPlayer().getWidth() / 2) {
-                    currentPlayer().velocity.x = 80*dt;
-                    currentPlayer().setFacing(1);
-                    currentPlayer().turnLineOfSightRight();
-                    game.wfm.sendMessageToServer( " BtnRightDown ");
+                    btnRightDown(playerIndex, dt);
+                    game.wfm.sendMessageToServer( playerIndex + " btnRightDown " + dt + " " + currentPlayer().b2body.getPosition().x + " " + currentPlayer().b2body.getPosition().y);
                 } else if (tapCoords.x < currentPlayer().b2body.getPosition().x - currentPlayer().getWidth() / 2) {
-                    currentPlayer().velocity.x = -80*dt;
-                    currentPlayer().setFacing(3);
-                    currentPlayer().turnLineOfSightLeft();
-                    game.wfm.sendMessageToServer(" BtnLeftDown ");
+                    btnLeftDown(playerIndex, dt);
+                    game.wfm.sendMessageToServer(playerIndex + " btnLeftDown " + dt + " " + currentPlayer().b2body.getPosition().x + " " + currentPlayer().b2body.getPosition().y);
                 }
                 if (tapCoords.y > currentPlayer().b2body.getPosition().y + currentPlayer().getHeight() / 2) {
-                    currentPlayer().velocity.y = 80*dt;
-                    currentPlayer().setFacing(0);
-                    currentPlayer().turnLineOfSightUp();
-                    game.wfm.sendMessageToServer(" BtnUpDown ");
+                    btnUpDown(playerIndex, dt);
+                    game.wfm.sendMessageToServer(playerIndex + " btnUpDown " + dt + " " + currentPlayer().b2body.getPosition().x + " " + currentPlayer().b2body.getPosition().y);
                 } else if (tapCoords.y < currentPlayer().b2body.getPosition().y - currentPlayer().getHeight() / 2) {
-                    currentPlayer().velocity.y = -80*dt;
-                    currentPlayer().setFacing(2);
-                    currentPlayer().turnLineOfSightDown();
-                    game.wfm.sendMessageToServer(" BtnDownDown ");
+                    btnDownDown(playerIndex, dt);
+                    game.wfm.sendMessageToServer(playerIndex + " btnDownDown " + dt + " " + currentPlayer().b2body.getPosition().x + " " + currentPlayer().b2body.getPosition().y);
                 }
             }
             else {
-                currentPlayer().setTouchDown(false);
-                currentPlayer().velocity.x = 0;
-                currentPlayer().velocity.y = 0;
-                game.wfm.sendMessageToServer(" touchUp ");
+                btnTouchUp(playerIndex);
+                game.wfm.sendMessageToServer(playerIndex + " btnTouchUp ");
             }
         }
     }
 
-    public void update(float dt) {
-        handleInput(dt);
-        lineOfView.setVertices(currentPlayer().getVerticez());
+    private void update(float dt) {
+            handleInput(dt);
+            lineOfView.setVertices(currentPlayer().getVerticez());
 
-        world.step(1 / 60f, 6, 2); //more info
+            world.step(1 / 60f, 6, 2); //more info
 
-        currentPlayer().update(dt);
-        otherPlayersUpdate(dt);
+            for(Player player: players)
+                player.update(dt);
 
-        cam.update();
-        hud.update(dt);
-        renderer.setView(cam);
+            cam.update();
+            hud.update(dt);
+            renderer.setView(cam);
 
-        //handle the camera change when the player enters a new room
-        if(currentPlayer().b2body.getPosition().x > (cam.viewportWidth)*(roomX+1)) {
-            cam.position.x += gamePort.getWorldWidth();
-            roomX++;
-        }
-        else if(currentPlayer().b2body.getPosition().x < cam.viewportWidth*(roomX)) {
-            cam.position.x -= gamePort.getWorldWidth();
-            roomX--;
-        }
-        else if(currentPlayer().b2body.getPosition().y > (gamePort.getWorldHeight())*(roomY+1)) { //-(0.3f/(roomY+1)))*(roomY+1)
-            //currentPlayer().b2body.setTransform(new Vector2(currentPlayer().b2body.getPosition().x,
-                    //currentPlayer().b2body.getPosition().y + 0.28f), currentPlayer().b2body.getAngle());
-            cam.position.y += gamePort.getWorldHeight();
-            roomY++;
-        }
-        else if(currentPlayer().b2body.getPosition().y < (gamePort.getWorldHeight())*(roomY)) { //+(0.3f/(roomY+1)))*(roomY)
-            //player.b2body.setTransform(new Vector2(player.b2body.getPosition().x,
-                    //player.b2body.getPosition().y - 0.28f), player.b2body.getAngle());
-            cam.position.y -= gamePort.getWorldHeight();
-            roomY--;
-        }
-
-        //if(b2wc.getChangeRoom().getBounds().overlaps())
-    }
-
-    private void otherPlayersUpdate(float dt) {
-        i = 0;
-        for(Player player : players) {
-            if(i != playerIndex) {
-                /*if ((message = game.btm.getMessage()) != null) {
-                    System.out.println("Message received: " + message);
-                    if (message.equals("touchDown")) {
-                        player.setTouchDown(true);
-                    } else if (message.equals("touchUp")) {
-                        player.setTouchDown(false);
-                        player.velocity.x = 0;
-                        player.velocity.y = 0;
-                    }
-                    if (player.isTouchDown()) {
-                        if (message.equals("BtnUpDown")) {
-                            player.velocity.y = 1.5f;
-                            player.setFacing(0);
-                        } else if (message.equals("BtnDownDown")) {
-                            player.velocity.y = -1.5f;
-                            player.setFacing(2);
-                        } else if (message.equals("BtnRightDown")) {
-                            player.velocity.x = 1.5f;
-                            player.setFacing(1);
-                        } else if (message.equals("BtnLeftDown")) {
-                            player.velocity.x = -1.5f;
-                            player.setFacing(3);
-                        }
-                    }
-                    player.update(dt);
-                }*/
+            //handle the camera change when the player enters a new room
+            if (currentPlayer().b2body.getPosition().x > (cam.viewportWidth) * (roomX + 1)) {
+                cam.position.x += gamePort.getWorldWidth();
+                roomX++;
+            } else if (currentPlayer().b2body.getPosition().x < cam.viewportWidth * (roomX)) {
+                cam.position.x -= gamePort.getWorldWidth();
+                roomX--;
+            } else if (currentPlayer().b2body.getPosition().y > (gamePort.getWorldHeight()) * (roomY + 1)) { //-(0.3f/(roomY+1)))*(roomY+1)
+                //currentPlayer().b2body.setTransform(new Vector2(currentPlayer().b2body.getPosition().x,
+                //currentPlayer().b2body.getPosition().y + 0.28f), currentPlayer().b2body.getAngle());
+                cam.position.y += gamePort.getWorldHeight();
+                roomY++;
+            } else if (currentPlayer().b2body.getPosition().y < (gamePort.getWorldHeight()) * (roomY)) { //+(0.3f/(roomY+1)))*(roomY)
+                //player.b2body.setTransform(new Vector2(player.b2body.getPosition().x,
+                //player.b2body.getPosition().y - 0.28f), player.b2body.getAngle());
+                cam.position.y -= gamePort.getWorldHeight();
+                roomY--;
             }
-            i++;
-        }
     }
 
     @Override
     public void render(float delta) {
-        update(delta);
-
         //clear game screen with black
-        Gdx.gl.glClearColor(0, 0 , 0 ,1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        //render game map
-        renderer.render();
-
-        //render debug lines
-        //b2dr.render(world, cam.combined);
-
-        game.batch.setProjectionMatrix(cam.combined);
-        game.batch.begin();
-        game.batch.draw(spT, spRect.getX(), spRect.getY(), spRect.width, spRect.height);
-        game.batch.end();
-
         sr.setProjectionMatrix(cam.combined);
-        sr.begin(ShapeRenderer.ShapeType.Line);
-        sr.polygon(lineOfView.getVertices());
-        sr.rect(spRect.x,spRect.y,spRect.width,spRect.height);
-        //sr.rectLine(currentPlayer().getX()+currentPlayer().getWidth()/2, currentPlayer().getY()+currentPlayer().getHeight()/2, tapCoords.x, tapCoords.y, 0.2f);
-        sr.end();
+        if(gameStarted) {
+            update(delta);
+            game.batch.setProjectionMatrix(cam.combined);
 
-        game.batch.setProjectionMatrix(cam.combined);
-        game.batch.begin();
-        for(Player player: players) {
-            //if(lineOfView.contains(player.b2body.getPosition().x, player.b2body.getPosition().y))  //to polygon tou view tou paikth kanei contain tis suntetagmenes tou antipalou
-            //if(new MyLine(currentPlayer().b2body.getPosition().x,currentPlayer().b2body.getPosition().y, player.b2body.getPosition().x, player.b2body.getPosition().y).isColliding())  //i eutheia apo ton paikth mexri ton antipalo den periexei objects
-            //  //zwgrafise ton antipalo
-            player.draw(game.batch);
+            //render game map
+            renderer.render();
+
+            //render debug lines
+            //b2dr.render(world, cam.combined);
+
+            game.batch.begin();
+            game.batch.draw(spT, spRect.getX(), spRect.getY(), spRect.width, spRect.height);
+            game.batch.end();
+
+            sr.begin(ShapeRenderer.ShapeType.Line);
+            sr.polygon(lineOfView.getVertices());
+            sr.rect(spRect.x, spRect.y, spRect.width, spRect.height);
+            //sr.rectLine(currentPlayer().getX()+currentPlayer().getWidth()/2, currentPlayer().getY()+currentPlayer().getHeight()/2, tapCoords.x, tapCoords.y, 0.2f);
+            sr.end();
+
+            game.batch.begin();
+            for (int i=0; i<players.size(); i++) {
+                //if(i == playerIndex || lineOfView.contains(players.get(i).b2body.getPosition().x, players.get(i).b2body.getPosition().y)) {//to polygon tou view tou paikth kanei contain tis suntetagmenes tou antipalou
+                    //if(new MyLine(currentPlayer().b2body.getPosition().x,currentPlayer().b2body.getPosition().y, player.b2body.getPosition().x, player.b2body.getPosition().y).isColliding())  //i eutheia apo ton paikth mexri ton antipalo den periexei objects
+                    players.get(i).draw(game.batch);
+                //}
+            }
+            game.batch.end();
+
+            //sr.begin(ShapeRenderer.ShapeType.Filled);
+            //sr.circle(currentPlayer().getCircle().x, currentPlayer().getCircle().y, currentPlayer().getCircle().radius);
+            //sr.end();
+
+            //set batch to draw only what the hud camera sees
+            game.batch.setProjectionMatrix(hud.stage.getCamera().combined);
+            hud.stage.draw();
         }
-        game.batch.end();
+        else {
+            sr.begin(ShapeRenderer.ShapeType.Filled);
+            sr.setColor(Color.BLACK);
+            sr.rect(0,0,cam.viewportWidth,cam.viewportHeight);
+            sr.setColor(Color.WHITE);
+            sr.end();
+            game.batch.begin();
+            HaSGame.font.draw(game.batch, "LOADING...", 320, 260);
+            game.batch.end();
+        }
+    }
 
+    private void btnRightDown(int playerIndex, float dt) {
+        players.get(playerIndex).velocity.x = 80*dt;
+        players.get(playerIndex).setFacing(1);
+        players.get(playerIndex).turnLineOfSightRight();
+        players.get(playerIndex).update(dt);
+    }
 
-        //set batch to draw only what the hud camera sees
-        game.batch.setProjectionMatrix(hud.stage.getCamera().combined);
-        hud.stage.draw();
+    private void btnLeftDown(int playerIndex, float dt) {
+        players.get(playerIndex).velocity.x = -80*dt;
+        players.get(playerIndex).setFacing(3);
+        players.get(playerIndex).turnLineOfSightLeft();
+        players.get(playerIndex).update(dt);
+    }
+
+    private void btnUpDown(int playerIndex, float dt) {
+        players.get(playerIndex).velocity.y = 80*dt;
+        players.get(playerIndex).setFacing(0);
+        players.get(playerIndex).turnLineOfSightUp();
+        players.get(playerIndex).update(dt);
+    }
+
+    private void btnDownDown(int playerIndex, float dt) {
+        players.get(playerIndex).velocity.y = -80*dt;
+        players.get(playerIndex).setFacing(2);
+        players.get(playerIndex).turnLineOfSightDown();
+        players.get(playerIndex).update(dt);
+    }
+
+    private void btnTouchUp(int playerIndex) {
+        players.get(playerIndex).setTouchDown(false);
+        players.get(playerIndex).velocity.x = 0;
+        players.get(playerIndex).velocity.y = 0;
     }
 
     @Override
@@ -334,6 +389,11 @@ public class PlayScreen implements Screen, InputProcessor {
 
     @Override
     public void resume() {
+
+    }
+
+    @Override
+    public void show() {
 
     }
 
@@ -357,48 +417,15 @@ public class PlayScreen implements Screen, InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
-        if(keycode == Input.Keys.UP || keycode == Input.Keys.W) {
-            currentPlayer().upPressed = true;
-        }
-        else if(keycode == Input.Keys.DOWN || keycode == Input.Keys.S) {
-            currentPlayer().downPressed = true;
-        }
-        else if(keycode == Input.Keys.RIGHT || keycode == Input.Keys.D) {
-            currentPlayer().rightPressed = true;
-        }
-        else if(keycode == Input.Keys.LEFT || keycode == Input.Keys.A) {
-            currentPlayer().leftPressed = true;
-        }
-        else if(keycode == Input.Keys.SPACE) {
-            currentPlayer().setRunningSpeed();
-        }
         return false;
     }
 
     @Override
     public boolean keyUp(int keycode) {
-        if(keycode == Input.Keys.UP || keycode == Input.Keys.W) {
-            currentPlayer().upPressed = false;
-            currentPlayer().velocity.y = 0;
-        }
-        else if(keycode == Input.Keys.DOWN || keycode == Input.Keys.S) {
-            currentPlayer().downPressed = false;
-            currentPlayer().velocity.y = 0;
-        }
-        else if(keycode == Input.Keys.RIGHT || keycode == Input.Keys.D) {
-            currentPlayer().rightPressed = false;
-            currentPlayer().velocity.x = 0;
-        }
-        else if(keycode == Input.Keys.LEFT || keycode == Input.Keys.A) {
-            currentPlayer().leftPressed = false;
-            currentPlayer().velocity.x = 0;
-        }
-        else if(keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK){
+        if(keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK){
             dispose();
+            ChatServer.closeAllSockets(game.wfm);
             game.setScreen(new MenuScreen(game));
-        }
-        else if(keycode == Input.Keys.SPACE) {
-            currentPlayer().setWalkingSpeed();
         }
         return false;
     }
@@ -411,23 +438,19 @@ public class PlayScreen implements Screen, InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        //game.btm.sendMessage("touchDown ");
         currentPlayer().setTouchDown(true);
         return false;
     }
 
     @Override
     public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        //game.btm.sendMessage("touchUp ");
-        currentPlayer().setTouchDown(false);
-        currentPlayer().velocity.x = 0;
-        currentPlayer().velocity.y = 0;
+        btnTouchUp(playerIndex);
+        game.wfm.sendMessageToServer(playerIndex + " btnTouchUp ");
         return false;
     }
 
     @Override
     public boolean touchDragged(int screenX, int screenY, int pointer) {
-        //game.btm.sendMessage("touchDown ");
         currentPlayer().setTouchDown(true);
         return false;
     }
@@ -450,9 +473,11 @@ public class PlayScreen implements Screen, InputProcessor {
         return spRect;
     }
 
+    public TextureAtlas getAtlas() {
+        return atlas;
+    }
+
     public boolean isSeeker() {
-        if(playerIndex==0)
-            return true;
-        return false;
+        return playerIndex == 0;
     }
 }

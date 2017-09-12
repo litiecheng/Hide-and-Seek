@@ -5,6 +5,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
@@ -100,12 +101,15 @@ public class JoinScreen implements Screen, InputProcessor {
         }
         if(game.wfm.hasClientInitFinish()) {
             dispose();
-            game.setScreen(new PlayScreen(this.game, "client"));
+            game.setScreen(new PlayScreen(this.game));
         }
     }
 
     @Override
     public void render(float delta) {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         sr.setProjectionMatrix(game.batch.getProjectionMatrix());
 
         //draw background
@@ -113,14 +117,13 @@ public class JoinScreen implements Screen, InputProcessor {
         game.batch.draw(bg, 0, 0, 800, 480);
         HaSGame.font.draw(game.batch, game.wfm.getCurrentDevice().getName(), 20, 460);
         if(game.wfm.getConnectedDevices().size()>0) {
-            HaSGame.font.draw(game.batch, "HOST: " + game.wfm.getConnectedDevices().get(0).getName(), 290, 460);
             HaSGame.font.draw(game.batch, "Connected Players", 280, 410);
             for(Button btn: connectedDevicesBtns)
                 btn.drawFont(game.batch);
             HaSGame.font.draw(game.batch, waitingString, 170, 60);
         }
         else {
-            HaSGame.font.draw(game.batch, "HOSTS:", 330, 410);
+            HaSGame.font.draw(game.batch, "HOSTS:", 335, 410);
             HaSGame.font.draw(game.batch, waitingString, 260, 460);
             for(Button btn: availableDevicesBtns)
                 btn.drawFont(game.batch);

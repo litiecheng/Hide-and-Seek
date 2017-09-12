@@ -68,15 +68,7 @@ public class AndroidLauncher extends AndroidApplication {
 	protected void onDestroy() {
 		super.onDestroy();
 		wfm.disconnect();
-		for(Socket socket: ChatServer.dataSocketsHMap.values()) {
-			Log.e("EEEEE", "EKANA RESET TA DATA SOCKETS STO ONDESTROY()");
-			try {
-				wfm.setConnected(false);
-				socket.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		ChatServer.closeAllSockets(wfm);
 	}
 
 	/**

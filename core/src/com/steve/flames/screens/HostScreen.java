@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
@@ -98,6 +99,9 @@ public class HostScreen implements Screen, InputProcessor {
 
     @Override
     public void render(float delta) {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         sr.setProjectionMatrix(game.batch.getProjectionMatrix());
 
         game.batch.begin();
@@ -162,6 +166,7 @@ public class HostScreen implements Screen, InputProcessor {
         if(keycode == Input.Keys.ESCAPE || keycode == Input.Keys.BACK){
             if(connectedDevicesBtns.size()>1)
                 game.wfm.disconnect();
+            ChatServer.closeAllSockets(game.wfm);
             dispose();
             game.setScreen(new MenuScreen(game));
         }
@@ -187,7 +192,7 @@ public class HostScreen implements Screen, InputProcessor {
         if(clickCoords.overlaps(startGameRect)) {
             game.wfm.sendMessageToAll("!START");
             dispose();
-            game.setScreen(new PlayScreen(game, "host"));
+            game.setScreen(new PlayScreen(game));
         }
         else if(clickCoords.overlaps(removeGroupBtn.getRect())) {
             if(connectedDevicesBtns.size()>1)

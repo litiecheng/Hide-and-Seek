@@ -24,11 +24,11 @@ public class ChatServer implements Runnable {
 
     private static final int PORT = 8888;
     private iWiFiDirect wfm;
-    public static HashMap<Device, Socket> dataSocketsHMap = new HashMap<Device, Socket>();
+    private static HashMap<Device, Socket> dataSocketsHMap = new HashMap<Device, Socket>();
     private Socket dataSocket;
 
     private ArrayList<PrintWriter> outList = new ArrayList<PrintWriter>();
-    private BufferedReader in;
+    private ArrayList<BufferedReader> inList = new ArrayList<BufferedReader>();
     //an thelw na steilw mono se enan mnm tote kanw k ena out sketo
     //private PrintWriter out;
 
@@ -58,7 +58,7 @@ public class ChatServer implements Runnable {
                 OutputStream os = dataSocket.getOutputStream(); //get the outgoing stream
                 outList.add(new PrintWriter(os,true));
                 InputStream is = dataSocket.getInputStream(); //get the incoming stream
-                in = new BufferedReader(new InputStreamReader(is));
+                inList.add(new BufferedReader(new InputStreamReader(is)));
 
 
                 new Thread()
@@ -68,19 +68,27 @@ public class ChatServer implements Runnable {
 
                         System.out.println("PRIN TO PRWTO READ");
                         String clientNameAddress = wfm.receiveMessage(); //read the client name first (part of the communication protocol)
-                        splitter = clientNameAddress.split("!~");
-                        System.out.println("META TO PRWTO READ: "+ clientNameAddress);
-                        wfm.getConnectedDevices().add(new Device(splitter[0], splitter[1]));
-                        for(Device device: wfm.getAvailableDevices()) { //remove from available list
-                            if(device.getAddress().equals(splitter[1]))
-                                wfm.getAvailableDevices().remove(device);
+                        if(clientNameAddress!=null) System.out.println(clientNameAddress);
+                        if(clientNameAddress != null) {
+                            splitter = clientNameAddress.split("!~");
+                            System.out.println("META TO PRWTO READ: " + clientNameAddress);
+                            wfm.getConnectedDevices().add(new Device(splitter[0], splitter[1]));
+                            for (Device device : wfm.getAvailableDevices()) { //remove from available list
+                                if (device.getAddress().equals(splitter[1]))
+                                    wfm.getAvailableDevices().remove(device);
+                            }
+                            //store the name of the client and the corresponding dataSocket in the dataSocketsHMap
+                            ChatServer.dataSocketsHMap.put(wfm.getConnectedDevices().get(wfm.getConnectedDevices().size() - 1), dataSocket);
+
+                            sendConnClientsToAll(); //send the connected clients to the new client
+
+                            System.out.println("TELEIWSE TO CHATSERVER");
                         }
-                        //store the name of the client and the corresponding dataSocket in the dataSocketsHMap
-                        ChatServer.dataSocketsHMap.put(wfm.getConnectedDevices().get(wfm.getConnectedDevices().size()-1), dataSocket);
-
-                        sendConnClientsToAll(); //send the connected clients to the new client
-
-                        System.out.println("TELEIWSE TO CHATSERVER");
+                        else {
+                            System.out.println("CHATSERVER NULL CLIENTNAMEADDRESS");
+                            wfm.disconnect();
+                            closeAllSockets(wfm);
+                        }
                     }
                 }.start();
             }
@@ -105,16 +113,17 @@ public class ChatServer implements Runnable {
     }
 
     public void sendMessageToAll(String msg) {
-        for(PrintWriter out: outList) {
+        for(PrintWriter out: outList)
             out.println(msg);
-        }
+        System.out.println("SERVER EGRAPSA SE OLOUS: " + msg);
     }
 
     public String receiveMessage() {
         try {
-            if(in != null)
-                return in.readLine();
+            if(inList.get(0) != null)
+                return inList.get(0).readLine();
         }catch(IOException e){
+            e.printStackTrace();
             int i=0;
             int j=0;
             if(e.getMessage().contains("Connection timed out")) {
@@ -130,9 +139,20 @@ public class ChatServer implements Runnable {
                 }
                 //textArea.append("Server is closed. You are now offline\n");
             }
-            e.printStackTrace();
         }
         return null;
+    }
+
+    public static void closeAllSockets(iWiFiDirect wfm) {
+        for(Socket socket: ChatServer.dataSocketsHMap.values()) {
+            System.out.println("!!!!!!!!!EKANA RESET TA DATA SOCKETS!!!!!!!!!!!");
+            try {
+                wfm.setConnected(false);
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 

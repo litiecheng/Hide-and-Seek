@@ -32,7 +32,7 @@ public class ChatClient implements Runnable{
     public ChatClient(String ip, HaSGame game) {
         hostIP = ip.substring(1); //to remove '/'
         this.game = game;
-        System.out.println("ZAZA BHKA CLINET");
+
         Thread thread = new Thread(this);
         thread.start(); //calls the run() method on the new thread
     }
@@ -68,9 +68,9 @@ public class ChatClient implements Runnable{
         try {
             return in.readLine();
         } catch (IOException e) {
+            e.printStackTrace();
             if(e.getMessage().contains("Connection timed out"))
                 game.wfm.disconnect();
-            e.printStackTrace();
         }
         return null;
     }
@@ -96,12 +96,11 @@ public class ChatClient implements Runnable{
             }
             else if(msg.equals("!START")) {
                 finish = true;
-                System.out.println("EDW1");
             }
-            msg = game.wfm.receiveMessage(); //read next message
             if(finish)
                 msg=null;
-            System.out.println("EDW2 "+msg);
+            else
+                msg = game.wfm.receiveMessage(); //read next message
         }
         System.out.println("CLIENT BGHKA APO LOOPA");
         //dataSocket.close();

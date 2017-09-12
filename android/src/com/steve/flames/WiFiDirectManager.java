@@ -106,8 +106,12 @@ public class WiFiDirectManager implements iWiFiDirect {
             @Override
             public void onFailure(int reason) {
                 toast("Group creation failed(code: "+reason+")");
-                activity.getGame().dispose();
-                activity.getGame().setScreen(new MenuScreen(activity.getGame()));
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        activity.getGame().setScreen(new MenuScreen(activity.getGame()));
+                    }
+                });
             }
         });
     }
@@ -117,7 +121,10 @@ public class WiFiDirectManager implements iWiFiDirect {
         activity.manager.removeGroup(activity.channel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                toast("Group reset");
+                if(isGroupOwner())
+                    toast("Group reset");
+                else
+                    toast("You left the group");
                 connected = false;
             }
 
@@ -148,8 +155,10 @@ public class WiFiDirectManager implements iWiFiDirect {
 
     @Override
     public void sendMessageToServer(String msg) {
-        chatClient.sendMessageToServer(msg);
-
+        if(!isGroupOwner())
+            chatClient.sendMessageToServer(msg);
+        else
+            chatServer.sendMessageToAll(msg);
     }
 
     @Override

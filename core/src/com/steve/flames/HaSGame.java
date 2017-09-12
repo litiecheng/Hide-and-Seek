@@ -20,6 +20,9 @@ import com.steve.flames.screens.MenuScreen;
  * rename to onoma tou
  * on pause na ginetai kokkinos(not ready) (apostolh mnmtos enhmerwshs ston host)
  *
+ *
+ * tetragwno to line of sight k ta upoloipa paint black
+ * fix changeRoom
  */
 
 public class HaSGame extends Game {
@@ -29,8 +32,8 @@ public class HaSGame extends Game {
 	public static final float PPM = 100;
 
 	public SpriteBatch batch;
-	public OrthographicCamera cam;
 	public iWiFiDirect wfm;
+	public OrthographicCamera cam;
 	public static BitmapFont font;
 
 	public HaSGame(iWiFiDirect wm) {
@@ -44,7 +47,6 @@ public class HaSGame extends Game {
 		font = new BitmapFont();
 		font.getData().setScale(2, 2);
 		setScreen(new MenuScreen(this));
-		//setScreen(new PlayScreen(this, "host"));
 	}
 
 	@Override

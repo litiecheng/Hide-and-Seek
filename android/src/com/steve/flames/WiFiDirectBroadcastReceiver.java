@@ -38,14 +38,12 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pManager.ConnectionInfoListener infoListener = new WifiP2pManager.ConnectionInfoListener() {
         @Override
         public void onConnectionInfoAvailable(WifiP2pInfo wifiP2pInfo) {
-            System.out.println("ZAZA");
             if(wifiP2pInfo.isGroupOwner) {
                 activity.getWfm().setGroupOwner(true);
                 activity.getWfm().initServer();
                 activity.getWfm().setConnected(true);
             }
             else {
-                System.out.println("ZAZA1212");
                 activity.getWfm().setGroupOwner(false);
                 activity.getWfm().initClient(wifiP2pInfo.groupOwnerAddress.toString());
             }

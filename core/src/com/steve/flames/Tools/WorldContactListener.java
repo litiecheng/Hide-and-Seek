@@ -23,14 +23,15 @@ public class WorldContactListener implements ContactListener {
             Fixture object = player == fixA ? fixB : fixA;
 
             if(object.getUserData() instanceof ChangeRoom) {
+                System.out.println("AFTO "+object.getBody().getPosition().x + 15 + " " + object.getBody().getPosition().y + 15);
                     if(((ChangeRoom) object.getUserData()).getName().equals("Right"))
-                        ((Player) player.getUserData()).changeRoom(1);
+                        ((Player) player.getUserData()).changeRoom(1, object.getBody().getPosition().x + 15, object.getBody().getPosition().y + 15);
                     else if(((ChangeRoom) object.getUserData()).getName().equals("Left"))
-                        ((Player) player.getUserData()).changeRoom(3);
+                        ((Player) player.getUserData()).changeRoom(3, object.getBody().getPosition().x + 15, object.getBody().getPosition().y + 15);
                     else if(((ChangeRoom) object.getUserData()).getName().equals("Up"))
-                        ((Player) player.getUserData()).changeRoom(0);
+                        ((Player) player.getUserData()).changeRoom(0, object.getBody().getPosition().x + 15, object.getBody().getPosition().y + 15);
                     else if(((ChangeRoom) object.getUserData()).getName().equals("Down"))
-                        ((Player) player.getUserData()).changeRoom(2);
+                        ((Player) player.getUserData()).changeRoom(2, object.getBody().getPosition().x + 15, object.getBody().getPosition().y + 15);
             }
         }
     }
